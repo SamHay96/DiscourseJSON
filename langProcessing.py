@@ -19,13 +19,21 @@ RA = ['Moreover', 'In addition', 'Additionally', 'Further', 'Further to this', '
 'besides', 'too', 'what is more', 'on top of this', 'on top of that', 'similarly', 'likewise', 'equally']
 CA = ['Although', 'Even though', 'Despite the fact that', 'In spite of the fact that', 'Regardless of the fact that','However', 'On the other hand', 'In contrast', 'Yet']
 r = requests.get("http://www.aifdb.org/json/7")
+
 match = ""
 targetNode=0
 topNode=0
 topEdge=0
 nodeType=""
 fromID=[]
+app = Flask(__name__)
+api = Api(app)
 
+@app.route("/")
+def hello():
+	return "Hello, API"
+if __name__ == '__main__':
+	app.run(debug=True)
 
 #createNode
 #node ID and type
@@ -35,24 +43,21 @@ def createNode(topNode,nodeType):
 	nid+=1
 	time = str(datetime.datetime.now())
 	nType=nodeType
-	rObject["nodes"].append({'nodeID':nid})
-	rObject["nodes"].append({'text':''})
-	rObject["nodes"].append({'type':nType})
-	rObject["nodes"].append({'timestamp':time})
-	print("Created node at:",nid,"with type",nType)
-	#print(rObject["nodes"])
+	rObject["nodes"].append({'nodeID':nid,'text':'','type':nType,'timestamp':time})
+	#print("Created node at:",nid,"with type",nType)
 	return nid
 #
 #
 #
 def createEdge(topEdge,nodeFrom,nodeTo):
 	eid=int(topEdge)
-	eid+1
+	eid+=1
 	edgeFrom = nodeFrom
 	edgeTo = nodeTo
 	rObject["edges"].append({'edgeID':eid,'fromID':edgeFrom,'toID':edgeTo,'formEdgeID':'null'})
 	#print("Created edge with ID:",eid,"from node:",edgeFrom,"toID",edgeTo)
-	#print(rObject["edges"])
+	return eid
+	
 
 #nodeCount
 #take last nodeID and edgeID
@@ -83,37 +88,27 @@ def edgeCount(edgeCounter,top):
 #JSON object from AIFB or in AIF format.	
 #returns RA or CA based on discourse markers present in node and checks proposed node against existing discourse in AIFDB.
 def counterSearch(rObject):
-	raCounter = 0
 	rType=0
 	cType=0
-	caCounter = 0
-
 	for o in rObject['nodes']:
 		nid = o['nodeID']
 		n = int(nid)
 		ntype = o["type"]
 		text = nltk.ConcordanceIndex(nltk.word_tokenize(o['text']))
-		#print(o['text'])
-		#text = o['text']	
 		for w in RA:
 			ra = w.lower()
 			if text.offsets(ra):
 				print("\n")
 				text.print_concordance(ra,0,0)
-				#print("RA")
-				#print(ra)
-				node=nid
-				fromID.append(node)
+				fromID.append(n)
 				rType=1
-				print('\nMatch on nodeID:',node,"type:",ntype,"with word:",ra)
+				print('\nMatch on nodeID:',n,"type:",ntype,"with word:",ra)
 				for e in rObject['edges']:#check the node connections from finished product
 							eid = e['edgeID']
 							etid = e['toID']
 							efid = e['fromID']
-							#print("checking assumed RA edgeID: ", eid, "going from node:",efid,"to node: ",etid)
-							if etid == node or efid == node and ntype == "RA":
+							if etid == n or efid == n and ntype == "RA":
 								print("\n !! RA confirmed on edge:", eid,efid,etid,ntype)
-								#raCounter += 1
 							es=int(eid)	
 		for x in CA:
 			ca = x.lower()
@@ -125,39 +120,32 @@ def counterSearch(rObject):
 							eid = e['edgeID']
 							etid = e['toID']
 							efid = e['fromID']
-							#print('\nMatch on nodeID:',node,"type:",ntype,"with word:",ca)
 							if nid == etid or nid == efid and ntype == "CA":
-								print("\nCA confirmed on edge:", eid)
-								#caCounter += 1				
+								print("\nCA confirmed on edge:", eid)								
 	ns=int(nid)
 	if rType == 1:
 		nodeType="RA"
 		topNode=nodeCount(nid,ns)	
 		topEdge=edgeCount(es,eid)
-
-		print(type(topEdge),topEdge)
-		print("TopNode should be:",nid,"is",topNode)
-		print("TopEdge should be:",eid,"is",topEdge)
 		targetNode = createNode(topNode,nodeType)
 		for x in fromID:
-			#print("es",es)
-			#print("top edge:",topEdge)
-			#print("node to link:",targetNode,"to node:",x)
-			createEdge(topEdge,x,targetNode)
-			#print("topEdge:",topEdge)
+			topEdge=createEdge(topEdge,x,targetNode)
 	if cType == 1:
 		nodeType="CA"
 		topNode=nodeCount(n,e)	
 		createNode(topNode,nodeType)
+	return rObject
 
-
-		#caCounter+=1
-		#print(r.status_code)
-	#print("Detected",raCounter,"RA link(s)")
-	#print("Detected",caCounter,"CA link(s)")	
 
 
 rObject = json.loads(r.text)
 counterSearch(rObject)
+print (rObject)
 
+
+
+
+
+#print(rObject["edges"])
+#print(rObject["nodes"])
 
