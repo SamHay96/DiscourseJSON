@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import jsonify
 import nltk
 import requests
 import parser
@@ -12,14 +13,14 @@ from nltk.corpus import stopwords
 ##TODO
 ##RESTFUL API
 ##Machine learning framework
-##edgeBuilder
+
 
 
 RA = ['Moreover', 'In addition', 'Additionally', 'Further', 'Further to this', 'Also', 'Besides','What is more','Because', 'Since', 'As', 'Insofar as','Therefore','Consequently','In consequence', 'As a result', 'Accordingly', 'Hence', 'Thus', 'For this reason', 'Because of this','If', 'In the event of', 'As long as', 'So long as', 'Provided that', 'Assuming that', 'Given that','On the contrary', 'As a matter of fact', 'In fact', 'Indeed', 'moreover', 'furthermore', 'in addition', 'also', 'further', 'alternatively', 'instead'
 'besides', 'too', 'what is more', 'on top of this', 'on top of that', 'similarly', 'likewise', 'equally']
 CA = ['Although', 'Even though', 'Despite the fact that', 'In spite of the fact that', 'Regardless of the fact that','However', 'On the other hand', 'In contrast', 'Yet']
-r = requests.get("http://www.aifdb.org/json/7")
 
+rObject=None
 match = ""
 targetNode=0
 topNode=0
@@ -28,17 +29,23 @@ nodeType=""
 fromID=[]
 app = Flask(__name__)
 api = Api(app)
+#r = requests.get("http://www.aifdb.org/json/7")
+#rObject = json.loads(r.text)
 
-@app.route("/")
-def hello():
-	return "Hello, API"
-if __name__ == '__main__':
-	app.run(debug=True)
+def chooseNodeSet(key):
+	nodekey=str(key)
+	print("Key =",key)
+	request="http://www.aifdb.org/json/"+str(nodekey)
+	r = requests.get(request)
+	rObject = json.loads(r.text)
+	#print("Request ran successfully",rObject)
+	return rObject
 
 #createNode
 #node ID and type
 #Create new node to be linked with edges
-def createNode(topNode,nodeType):
+def createNode(resp,topNode,nodeType):
+	rObject=resp
 	nid=topNode
 	nid+=1
 	time = str(datetime.datetime.now())
@@ -49,7 +56,8 @@ def createNode(topNode,nodeType):
 #
 #
 #
-def createEdge(topEdge,nodeFrom,nodeTo):
+def createEdge(resp,topEdge,nodeFrom,nodeTo):
+	rObject=resp
 	eid=int(topEdge)
 	eid+=1
 	edgeFrom = nodeFrom
@@ -87,7 +95,9 @@ def edgeCount(edgeCounter,top):
 #counterSearch 
 #JSON object from AIFB or in AIF format.	
 #returns RA or CA based on discourse markers present in node and checks proposed node against existing discourse in AIFDB.
-def counterSearch(rObject):
+def counterSearch(resp):
+	rObject=resp
+	#print(rObject)
 	rType=0
 	cType=0
 	for o in rObject['nodes']:
@@ -99,10 +109,10 @@ def counterSearch(rObject):
 			ra = w.lower()
 			if text.offsets(ra):
 				print("\n")
-				text.print_concordance(ra,0,0)
+				#text.print_concordance(ra,0,0)
 				fromID.append(n)
 				rType=1
-				print('\nMatch on nodeID:',n,"type:",ntype,"with word:",ra)
+				#print('\nMatch on nodeID:',n,"type:",ntype,"with word:",ra)
 				for e in rObject['edges']:#check the node connections from finished product
 							eid = e['edgeID']
 							etid = e['toID']
@@ -113,9 +123,11 @@ def counterSearch(rObject):
 		for x in CA:
 			ca = x.lower()
 			if text.offsets(ca):
-				text.print_concordance(ca)
-				print("CA")
-				print(ca)
+				#text.print_concordance(ca)
+				fromID.append(n)
+				cType=1
+				#print("CA")
+				#print(ca)
 				for e in rObject['edges']:#check the node connections from finished product
 							eid = e['edgeID']
 							etid = e['toID']
@@ -127,25 +139,37 @@ def counterSearch(rObject):
 		nodeType="RA"
 		topNode=nodeCount(nid,ns)	
 		topEdge=edgeCount(es,eid)
-		targetNode = createNode(topNode,nodeType)
+		targetNode = createNode(rObject,topNode,nodeType)
 		for x in fromID:
-			topEdge=createEdge(topEdge,x,targetNode)
+			topEdge=createEdge(rObject,topEdge,x,targetNode)
 	if cType == 1:
 		nodeType="CA"
-		topNode=nodeCount(n,e)	
-		createNode(topNode,nodeType)
+		topNode=nodeCount(nid,ns)	
+		topEdge=edgeCount(es,eid)
+		targetNode = createNode(rObject,topNode,nodeType)
+		for x in fromID:
+			topEdge=createEdge(rObject,topEdge,x,targetNode)
 	return rObject
 
-
-
-rObject = json.loads(r.text)
-counterSearch(rObject)
-print (rObject)
+@app.route("/")
+def hello():
+	#try:
+	key=input("Enter the key you want to use: ")
+	rObject = chooseNodeSet(key)
+	#print("ChooseNodeset pass")
+	nObject = counterSearch(rObject)
+	#print("CounterSearch pass")
+	return jsonify(nObject)
+	#except:
+	#	print("Counter search failed")
+		#return "This isnt working"
+if __name__ == '__main__':
+	app.run(debug=True)
 
 
 
 
 
 #print(rObject["edges"])
-#print(rObject["nodes"])
+print(rObject)
 
