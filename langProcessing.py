@@ -218,8 +218,8 @@ def proposeCA(nid,text,marker):
 #returns RA or CA based on discourse markers present in node and checks proposed node against existing discourse in AIFDB.
 def counterSearch(resp):
 	rObject=resp
-	print("Pre-search:")
-	countAll(resp)
+	#print("Pre-search:")
+	#countAll(resp)
 	#print(rObject)
 	rType=0
 	cType=0
@@ -231,8 +231,9 @@ def counterSearch(resp):
 		nid = str(o['nodeID'])
 		n = int(nid)
 		ntype = str(o["type"])
+		token = nltk.word_tokenize(o['text'])
 		text = nltk.ConcordanceIndex(nltk.word_tokenize(o['text']))
-		
+		print(token)
 		for w in RA:
 			ra = w.lower()
 			#print(n,"RA:",ra)
@@ -296,6 +297,7 @@ def counterSearch(resp):
 	print("Detected",len(proposedCA),"potential CA(s)\n")
 	return rObject
 
+
 #@app.route("/")
 #def hello():
 	#try:
@@ -319,7 +321,7 @@ rObject = chooseNodeSet(key)
 
 for d in dataset:
 	nObject = counterSearch(d)
-	printDataSets()
+	#printDataSets()
 resultsFilter(proposedRA,proposedCA)
 print("\nResult set RA length: " + str(len(resultSetRAMarker)))
 print("Result set CA length: " + str(len(resultSetCAMarker)))
