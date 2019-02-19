@@ -9,6 +9,7 @@ import datetime
 import json
 from flask_restful import Api, Resource, reqparse
 from nltk.corpus import treebank
+from nltk.corpus import sentiwordnet as swn
 from nltk import CFG
 from nltk.corpus import stopwords
 
@@ -17,7 +18,7 @@ from nltk.corpus import stopwords
 ##Machine learning framework
 
 
-RA = ["Above all", "additionally", "again", "also", "and"," as well as", "at the same time", "besides", "equally important", "furthermore", "in addition", "least of all", "likewise", "moreover", "more importantly", "most of all", "too", "not only", "what’s more", "as", "as a consequence of", "as a result"," as it is", "as it was", "because", "consequently", "due to ","hence", "in response", "so", "since", "therefore", "thus", "equally", "exactly", "identically", "in much the same way"," in relation to", "like", "matching", "of little difference", "resembling", "same as", "similar to", "similarly"," as illustrated by", "as revealed by", "for example", "for instance", "in other words", "in particular"]
+RA = ["Above all", "additionally", "again", "also"," as well as", "at the same time", "besides", "equally important", "furthermore", "in addition", "least of all", "likewise", "moreover", "more importantly", "most of all", "too", "not only", "what’s more", "as", "as a consequence of", "as a result"," as it is", "as it was", "because", "consequently", "due to ","hence", "in response", "so", "since", "therefore", "thus", "equally", "exactly", "identically", "in much the same way"," in relation to", "like", "matching", "of little difference", "resembling", "same as", "similar to", "similarly"," as illustrated by", "as revealed by", "for example", "for instance", "in other words", "in particular"]
 CA = ["A striking difference", "accepting that", "admittedly", "after all, against", "allowing that", "although", "and yet", "but", "by contrast", "despite", "doubtless", "even so", "for all that", "fortunately", "granted that", "however", "in another way", "in contrast", "in one way", "in opposition to", "in spite of", "instead", "it is true that", "it may well be", "naturally", "nevertheless", "nonetheless", "on one hand", "on the other hand", "on the contrary","otherwise", "to differ from", "to oppose", "unlike", "until", "versus"," while it is true", "yet", "against", "although", "be that as it may", "besides", "despite this fact", "in one way", "instead", "nonetheless"]
 
 
@@ -44,7 +45,7 @@ api = Api(app)
 #r = requests.get("http://www.aifdb.org/json/7")
 #rObject = json.loads(r.text)
 
-def printDataSets():
+#def printDataSets():
 	#for i in proposedRA:
 	#	print("proposed RA:",i)
 	#for i in proposedCA:
@@ -57,25 +58,28 @@ def printDataSets():
 	#	print("detected RA:",i)
 	#for i in CANode:
 	#	print("detected CA:",i)
-	for i in resultSetRAMarker:
-		print("RA marker:",i)
-	for i in resultSetCAMarker:
-		print("CA marker:",i)
+	#for i in resultSetRAMarker:
+	#	print("RA marker:",i)
+	#for i in resultSetCAMarker:
+	#	print("CA marker:",i)
 
 def resultsFilter(proposedRA,proposedCA):
 	for i in proposedRA:
 		j=str(i)
 		result = [x.strip() for x in j.split('|')]	
 		marker=str(result[2])
-		print(result[2])
+	#	print(result[2])
 		resultSetRAMarker.append(marker)
 	for i in proposedCA:
 		j=str(i)
 		result = [x.strip() for x in j.split('|')]
 		marker=str(result[2])
-		print(result[2])
+	#	print(result[2])
 		resultSetCAMarker.append(marker)
 
+def sentAnalysis():
+	breakdown = swn.senti_synset('breakdown.n.03')
+	print(breakdown)
 		
 def createDataSet():
 	header="araucaria/"
@@ -106,7 +110,7 @@ def countAll(resp):
 			iNodeTotal+=1
 	for e in rObject['edges']:
 		edgeTotal+=1
-	print("Total nodes: ",nodeTotal,"Total edges: ", edgeTotal,"Total CA:", caTotal, "Total RA: ", raTotal,"Total iNode: ",iNodeTotal)
+	#print("Total nodes: ",nodeTotal,"Total edges: ", edgeTotal,"Total CA:", caTotal, "Total RA: ", raTotal,"Total iNode: ",iNodeTotal)
 
 
 def chooseNodeSet(key):
@@ -292,10 +296,10 @@ def counterSearch(resp):
 		targetNode = createNode(rObject,topNode,nodeType)
 		for x in fromID:
 			topEdge=createEdge(rObject,topEdge,x,targetNode)
-	print("\nPost-search:")
+	#print("\nPost-search:")
 	countAll(resp)
-	print("\nDetected",len(proposedRA),"potential RA(s)")
-	print("Detected",len(proposedCA),"potential CA(s)\n")
+	#print("\nDetected",len(proposedRA),"potential RA(s)")
+	#print("Detected",len(proposedCA),"potential CA(s)\n")
 	return rObject
 
 
@@ -320,22 +324,24 @@ key=7
 rObject = chooseNodeSet(key)
 #counterSearch(rObject)
 
-for d in dataset:
-	nObject = counterSearch(d)
+#for d in dataset:
+#	nObject = counterSearch(d)
 	#printDataSets()
 resultsFilter(proposedRA,proposedCA)
-print("\nResult set RA length: " + str(len(resultSetRAMarker)))
-print("Result set CA length: " + str(len(resultSetCAMarker)))
+sentAnalysis()
+#print("\nResult set RA length: " + str(len(resultSetRAMarker)))
+#print("Result set CA length: " + str(len(resultSetCAMarker)))
 
 
 raCount = nltk.FreqDist(resultSetRAMarker)
 caCount = nltk.FreqDist(resultSetCAMarker)
-print("\nMost frequent RA markers")
-for w, f in raCount.most_common(50):
-    print(u'{}:{}'.format(w, f))
-print("\nMost frequent CA markers")
-for w, f in caCount.most_common(50):
-    print(u'{}:{}'.format(w, f))
+
+#print("\nMost frequent RA markers")
+#for w, f in raCount.most_common(50):
+#    print(u'{}:{}'.format(w, f))
+#print("\nMost frequent CA markers")
+#for w, f in caCount.most_common(50):
+#    print(u'{}:{}'.format(w, f))
 #print(rObject["edges"])
 #print(rObject)
 
