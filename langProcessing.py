@@ -155,7 +155,7 @@ def createNode(resp,topNode,nodeType):
 	time = str(datetime.datetime.now())
 	nType=nodeType
 	rObject["nodes"].append({'nodeID':nid,'text':'','type':nType,'timestamp':time})
-	#print("Created node at:",nid,"with type",nType)
+	print("Created node at:",nid,"with type",nType)
 	return nid
 #
 #
@@ -167,7 +167,7 @@ def createEdge(resp,topEdge,nodeFrom,nodeTo):
 	edgeFrom = nodeFrom
 	edgeTo = nodeTo
 	rObject["edges"].append({'edgeID':eid,'fromID':edgeFrom,'toID':edgeTo,'formEdgeID':'null'})
-	#print("Created edge with ID:",eid,"from node:",edgeFrom,"toID",edgeTo)
+	print("Created edge with ID:",eid,"from node:",edgeFrom,"toID",edgeTo)
 	return eid
 	
 
@@ -197,10 +197,9 @@ def edgeCount(edgeCounter,top):
 
 def proposeRA(nid):
 	raNid = str(nid)
-	raData = raNid
+	raData = raNid 
 	proposedRA.append(raData)
-	#	for i in proposedRA:
-	#	print(i)
+
 
 #
 #Add node id, text and marker to established set
@@ -227,15 +226,12 @@ def detectNodeType(nid,ntype):
 	if ntype=="CA":
 		CANode.append(node)
 
-def proposeCA(nid,text,marker):
+def proposeCA(nid):
 	caNid = str(nid)
-	caText=str(text)
-	caMarker=str(marker)
-	caData = caNid + '|' + caText + '|' + caMarker	
+	caData = caNid 
 	proposedCA.append(caData)
 	#for i in proposedCA:
 	#	print(i)
-
 def getPolarity(r):
 	sentoke=r
 	sia=SentimentIntensityAnalyzer()
@@ -251,180 +247,123 @@ def getPolarity(r):
 			return polarity
 
 
-
+#safe bet = new RA node for every 2 matches
+#counterSearch 
+#JSON object from AIFB or in AIF format.	
 #returns RA or CA based on discourse markers present in node and checks proposed node against existing discourse in AIFDB.
 def counterSearch(resp):
 	rObject=resp
 	#print("Pre-search:")
 	countAll(resp)
 	rType=0
-	cType=0		
+	cType=0
+	for n in rObject['nodes']:
+		nid = str(n['nodeID'])
+		ntype = str(n["type"])
+		detectNodeType(nid,ntype)
+		processed=0
+	for e in rObject['edges']:#check the node connections from finished product
+		eid = str(e['edgeID'])
+		etid = str(e['toID'])
+		efid = str(e['fromID'])
 	for o in rObject['nodes']:
 		nid = str(o['nodeID'])
-		t = str(o['text'])
 		n = int(nid)
 		ntype = str(o["type"])
-		detectNodeType(nid,ntype)
 		token = nltk.word_tokenize(o['text'])
 		text = nltk.ConcordanceIndex(token)
+		#print(tagged)
+		#print(Tree('t',tagged))
 		sentoke = nltk.sent_tokenize(o['text'])
-		polarity = getPolarity(sentoke)
-		for e in rObject['edges']:#check the node connections from finished product
-			eid = str(e['edgeID'])
-			etid = str(e['toID'])
-			efid = str(e['fromID'])
+		sia=SentimentIntensityAnalyzer()
+		polarity=getPolarity(sentoke)
+			#for l in sorted(ss):
+			#	print('{0}: {1}, '.format(l, ss[l]), end='')
+			#print()
+		#dumb = [(word,map_tag('en-ptb','universal',tag))for word, tag in tagged]
+		#print(dumb)
+		tagged = nltk.pos_tag(token)
+		bg=ngrams(tagged,3)
+		l = WordNetLemmatizer()
+		#print('lemmatizer results for marker',ra,":",l.lemmatize(ra))
+		#for b in bg:
+		#	y = nltk.ConcordanceIndex(c)
+		for w in RA:
+			ra = w.lower()
+			if text.offsets(ra):
+				#print('detection on' ,ra)
+				if polarity =='positive':
+						for z in PP:
+							if w == z:
+								print('definitely positive')
+								proposeRA(n)
+						for z in C:
+							if w == z:
+								print('positive and casual')
+								proposeRA(n)
+						for z in V:
+							if w == z:
+								print('positive verdict')
+								proposeRA(n)
+						for z in NV:
+							if w == z:
+								print('positvely not a verdict')
+								proposeRA(n)
+						for z in T:
+							if w == z:
+								print('temporal pos')
+								proposeRA(n)
+						#print("\n")
+						#print(b)
+						fromID.append(n)
+						rType=1
+						t = str(o['text'])
+						processed=1	
+		for x in CA:
+			ca = x.lower()
+			#print(n,"CA:",ca)
+			if processed==1:
+				break
 			tagged = nltk.pos_tag(token)
 			bg=ngrams(tagged,3)
-			l = WordNetLemmatizer()
-			#print('lemmatizer results for marker',ra,":",l.lemmatize(ra))
-			processed=0
-		for b in bg:
-			if processed == 0:
-				for c in b:
-					y = nltk.ConcordanceIndex(c)
-					for w in RA:
-						ra = w.lower()
-						if y.offsets(ra):
-							print('detection on' ,ra)
-							if polarity =='positive':
-								print('positive polarity detected')
-								for z in PP:
-									if y.offsets(z):
-										print('Positive Polarity marker')
+			for b in bg:
+				for x in b:
+					y = nltk.ConcordanceIndex(x)
+					if y.offsets(ca):
+						for c in b:
+							#print(b)
+							z = nltk.ConcordanceIndex(c)
+							if z.offsets(ca):
+								for d in c:
+									if d =='IN':
+										t = str(d)
+										proposeCA(n,t,ca)
 										processed=1
-										fromID.append(n)
-										rType=1
-										proposeRA(n)
-										processed=1
-										synset=list(swn.senti_synsets(ra, "a"))
-										es=int(eid)
-										for f in RANode:
-											if etid==nid or efid==nid:
-												if etid == f or efid == f:
-													detectRA(n,t,ra)
-													es=int(eid)
-								for z in C:
-									if y.offsets(z):
-										print('positive and casual')
-										processed=1
-										fromID.append(n)
-										rType=1
-										print(n)
-										proposeRA(n)
-										processed=1
-										synset=list(swn.senti_synsets(ra, "a"))
-										for e in rObject['edges']:#check the node connections from finished product
-											eid = str(e['edgeID'])
-											etid = str(e['toID'])
-											efid = str(e['fromID'])
-											es=int(eid)
-											for f in RANode:
-												if etid==nid or efid==nid:
-													if etid == f or efid == f:
-														detectRA(n,t,ra)
-														es=int(eid)	
-								for z in V:
-									if y.offsets(z):
-										if y.offsets(z):
-											print('positive verdict')
-											processed=1
-											fromID.append(n)
-											rType=1
-											proposeRA(n)
-											processed=1
-											synset=list(swn.senti_synsets(ra, "a"))
-											for e in rObject['edges']:#check the node connections from finished product
-												eid = str(e['edgeID'])
-												etid = str(e['toID'])
-												efid = str(e['fromID'])
-												es=int(eid)
-												for f in RANode:
-													if etid==nid or efid==nid:
-														if etid == f or efid == f:
-															detectRA(n,t,ra)
-															es=int(eid)
-								for z in NV:
-									if y.offsets(z):
-										if y.offsets(z):
-											print('positively not a verdict')
-											processed=1
-											fromID.append(n)
-											rType=1
-											proposeRA(n,t,ra)
-											processed=1
-											synset=list(swn.senti_synsets(ra, "a"))
-											for e in rObject['edges']:#check the node connections from finished product
-												eid = str(e['edgeID'])
-												etid = str(e['toID'])
-												efid = str(e['fromID'])
-												es=int(eid)
-												for f in RANode:
-													if etid==nid or efid==nid:
-														if etid == f or efid == f:
-															detectRA(n,t,ra)
-															es=int(eid)
-								for z in T:
-									if y.offsets(z):
-											print('temporal pos')
-											processed=1
-											fromID.append(n)
-											rType=1
-											proposeRA(n,t,ra)
-											processed=1
-											synset=list(swn.senti_synsets(ra, "a"))
-											for e in rObject['edges']:#check the node connections from finished product
-												eid = str(e['edgeID'])
-												etid = str(e['toID'])
-												efid = str(e['fromID'])
-												es=int(eid)
-												for f in RANode:
-													if etid==nid or efid==nid:
-														if etid == f or efid == f:
-															detectRA(n,t,ra)
-															es=int(eid)	
-														
-					for x in CA:
-						ca = x.lower()
-						#print(n,"CA:",ca)
-						tagged = nltk.pos_tag(token)
-						bg=ngrams(tagged,3)
-						for b in bg:
-							for x in b:
-								y = nltk.ConcordanceIndex(x)
-								if y.offsets(ca):
-									for c in b:
-										#print(b)
-										z = nltk.ConcordanceIndex(c)
-										if z.offsets(ca):
-											for d in c:
-												if d =='IN':
-													t = str(d)
-													proposeCA(n,t,ca)
-													processed=1
-													for e in rObject['edges']:#check the node connections from finished product
-														eid = e['edgeID']
-														etid = e['toID']
-														efid = e['fromID']
-														es=int(eid)
-														for f in CANode:
-															if etid==nid or efid==nid:
-																if etid == f or efid == f:
-																	detectCA(n,t,ca)
-																	ns=int(nid)
-	if rType == 1:
-		nodeType="RA"
-		topNode=nodeCount(nid,ns)	
+								#print("\n !! RA confirmed on edge:", eid,efid,etid,ntype)
+	ns=int(nid)
+				#print('\nMatch on nodeID:',n,"type:",ntype,"with word:",ca)
+	for i in proposedRA:
+		nodeType='RA'
+		es=eid
+		topNode=nodeCount(nid,ns)
 		topEdge=edgeCount(es,eid)
 		targetNode = createNode(rObject,topNode,nodeType)
-		for x in fromID:
-			topEdge=createEdge(rObject,topEdge,x,targetNode)
-	if cType == 1:
-		nodeType="CA"
-		topNode=nodeCount(nid,ns)	
+		print('target',targetNode)
+		connections=0
+		if connections < 4:
+			topEdge=createEdge(rObject,topEdge,targetNode,i)
+			connections=+1
+	for i in proposedCA:
+		nodeType='RA'
+		es=eid
+		topNode=nodeCount(nid,ns)
 		topEdge=edgeCount(es,eid)
 		targetNode = createNode(rObject,topNode,nodeType)
-		for x in fromID:
-			topEdge=createEdge(rObject,topEdge,x,targetNode)
+		print('target',targetNode)
+		connections=0
+		if connections < 4:
+			topEdge=createEdge(rObject,topEdge,targetNode,i)
+			connections=+1
 	#print("\nPost-search:")
 	countAll(resp)
 	#print("\nDetected",len(proposedRA),"potential RA(s)")
@@ -475,16 +414,13 @@ counterSearch(rObject)
 #	dumb = [(word,map_tag('en-ptb','universal',tag))for word, tag in tagged]
 #	breakdown = swn.senti_synsets(x,'r')
 	#print(dumb)
-#print("Actual RA:", len(establishedRA))
-#print("Actual CA:", len(establishedCA))
-#print("Detected RA:", len(proposedRA))
-#print("Detected CA:", len(proposedCA))
-#print("CA:", len(CANode))
-#print("RA:", len(RANode))
-for i in RANode:
-	print("RA:",i)
-for i in CANode:
-	print("CA",i)
+print("Actual RA:", len(establishedRA))
+print("Actual CA:", len(establishedCA))
+print("Detected RA:", len(proposedRA))
+print("Detected CA:", len(proposedCA))
+print("CA:", len(CANode))
+print("RA:", len(RANode))
+
 #	printDataSets()
 #resultsFilter(proposedRA,proposedCA)
 #sentAnalysis()
