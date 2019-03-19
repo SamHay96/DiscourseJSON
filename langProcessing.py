@@ -40,7 +40,7 @@ NV=["Assuming that","even if","if","if ever",  "if only",  "incase","on conditio
 A=["and","but","whereas"]
 #temporal
 T=["After","as soon as","before","ever since","now",  "now that","once","until","when","whenever"]
-#casual
+#causal
 C=["Although","because","even though","for", "given that","if","if ever"," incase","on the condition that","on the assumption that","on the grounds that","provided that","providing that","so","so that","supposing that","though","unless"]
 
 CANode=[]
@@ -55,6 +55,8 @@ posTotal=[]
 negTotal=[]
 resultSetRAMarker=[]
 resultSetCAMarker=[]
+raEvalData=[]
+caEvalData=[]
 
 rObject=None
 match = ""
@@ -74,18 +76,18 @@ def printDataSets():
 	#	print("proposed RA:",i)
 	#for i in proposedCA:
 	#	print("Proposed RA:",i)
-	for i in establishedRA: 
-		print("Established RA:",i)
-	for i in establishedCA:
-		print("Established CA:",i)
+	#for i in establishedRA: 
+	#	print("Established RA:",i)
+	#for i in establishedCA:
+	#	print("Established CA",i)
 	#for i in RANode:
-	#	print("detected RA:",i)
+	#	print("detected RA on node:",i)
 	#for i in CANode:
-	#	print("detected CA:",i)
+	#	print("detected CA on node:",i)
 	#for i in resultSetRAMarker:
 	#	print("RA marker:",i)
-	#for i in resultSetCAMarker:
-	#	print("CA marker:",i)
+	for i in resultSetCAMarker:
+		print("CA marker:",i)
 
 def resultsFilter(proposedRA,proposedCA):
 	for i in proposedRA:
@@ -105,7 +107,7 @@ def createDataSet():
 	header="araucaria/"
 	numerator=8
 	footer=".json"
-	while numerator <= 101:
+	while numerator <= 668:
 		request=header+"nodeset"+str(numerator)+".json"
 		with open(request,'r') as x:
 			item = json.load(x)
@@ -150,12 +152,11 @@ def chooseNodeSet(key):
 #Create new node to be linked with edges
 def createNode(resp,topNode,nodeType):
 	rObject=resp
-	nid=topNode
-	nid+=1
+	nid=topNode+1
 	time = str(datetime.datetime.now())
 	nType=nodeType
 	rObject["nodes"].append({'nodeID':nid,'text':'','type':nType,'timestamp':time})
-	print("Created node at:",nid,"with type",nType)
+	#print("Created node at:",nid,"with type",nType)
 	return nid
 #
 #
@@ -163,11 +164,11 @@ def createNode(resp,topNode,nodeType):
 def createEdge(resp,topEdge,nodeFrom,nodeTo):
 	rObject=resp
 	eid=int(topEdge)
-	eid+=1
+	eid = eid + 1
 	edgeFrom = nodeFrom
 	edgeTo = nodeTo
 	rObject["edges"].append({'edgeID':eid,'fromID':edgeFrom,'toID':edgeTo,'formEdgeID':'null'})
-	print("Created edge with ID:",eid,"from node:",edgeFrom,"toID",edgeTo)
+	#print("Created edge with ID:",eid,"from node:",edgeFrom,"toID",edgeTo)
 	return eid
 	
 
@@ -223,6 +224,7 @@ def detectNodeType(nid,ntype):
 	nodetype=str(ntype)
 	if ntype =="RA":
 		RANode.append(node)
+		print(node)
 	if ntype=="CA":
 		CANode.append(node)
 
@@ -246,6 +248,30 @@ def getPolarity(r):
 			polarity="negative"
 			return polarity
 
+def raEval(nid,text,marker,desc,polarity):
+	nid=str(nid)
+	ntext=str(text)
+	nmarker=str(marker)
+	ndescription=str(desc)
+	npolarity=str(polarity)
+	data='node id:',nid,'node content:',ntext,'node marker:',nmarker,'node desc:',ndescription,'node polarity:',npolarity
+	raEvalData.append(data)
+
+	
+	
+	
+def caEval(nid,text,marker,desc,polarity):
+	nid=str(nid)
+	ntext=str(text)
+	nmarker=str(marker)
+	ndescription=str(desc)
+	npolarity=str(polarity)
+	data='node id:',nid,'node content:',ntext,'node marker:',nmarker,'node desc:',ndescription,'node polarity:',npolarity
+	caEvalData.append(data)
+	
+
+
+
 
 #safe bet = new RA node for every 2 matches
 #counterSearch 
@@ -253,179 +279,178 @@ def getPolarity(r):
 #returns RA or CA based on discourse markers present in node and checks proposed node against existing discourse in AIFDB.
 def counterSearch(resp):
 	rObject=resp
+
+	#to check
+	rtc=[]
+	ctc=[]
+	
 	#print("Pre-search:")
 	countAll(resp)
 	rType=0
 	cType=0
+
 	for n in rObject['nodes']:
 		nid = str(n['nodeID'])
 		ntype = str(n["type"])
 		detectNodeType(nid,ntype)
 		processed=0
-	for e in rObject['edges']:#check the node connections from finished product
+		
+
+	for e in rObject['edges']:#check the node connections 
 		eid = str(e['edgeID'])
 		etid = str(e['toID'])
 		efid = str(e['fromID'])
+		for r in RANode:
+			#print(eid,'vs',r)
+			if r == etid:
+				#print("boop1")
+				rtc.append(etid)
+			if efid == r:
+				#print("boop2")
+				rtc.append(efid)
+	for r in rtc:
+			if nid==r:
+				print(str(n['text']))
+	
+	
 	for o in rObject['nodes']:
 		nid = str(o['nodeID'])
 		n = int(nid)
 		ntype = str(o["type"])
 		token = nltk.word_tokenize(o['text'])
 		text = nltk.ConcordanceIndex(token)
-		#print(tagged)
-		#print(Tree('t',tagged))
 		sentoke = nltk.sent_tokenize(o['text'])
 		sia=SentimentIntensityAnalyzer()
 		polarity=getPolarity(sentoke)
-			#for l in sorted(ss):
-			#	print('{0}: {1}, '.format(l, ss[l]), end='')
-			#print()
-		#dumb = [(word,map_tag('en-ptb','universal',tag))for word, tag in tagged]
-		#print(dumb)
 		tagged = nltk.pos_tag(token)
 		bg=ngrams(tagged,3)
 		l = WordNetLemmatizer()
-		#print('lemmatizer results for marker',ra,":",l.lemmatize(ra))
-		#for b in bg:
-		#	y = nltk.ConcordanceIndex(c)
 		for w in RA:
 			ra = w.lower()
 			if text.offsets(ra):
-				#print('detection on' ,ra)
 				if polarity =='positive':
-						for z in PP:
-							if w == z:
-								print('definitely positive')
-								proposeRA(n)
-						for z in C:
-							if w == z:
-								print('positive and casual')
-								proposeRA(n)
-						for z in V:
-							if w == z:
-								print('positive verdict')
-								proposeRA(n)
-						for z in NV:
-							if w == z:
-								print('positvely not a verdict')
-								proposeRA(n)
-						for z in T:
-							if w == z:
-								print('temporal pos')
-								proposeRA(n)
-						#print("\n")
-						#print(b)
-						fromID.append(n)
-						rType=1
-						t = str(o['text'])
-						processed=1	
-		for x in CA:
-			ca = x.lower()
-			#print(n,"CA:",ca)
-			if processed==1:
-				break
-			tagged = nltk.pos_tag(token)
-			bg=ngrams(tagged,3)
-			for b in bg:
-				for x in b:
-					y = nltk.ConcordanceIndex(x)
-					if y.offsets(ca):
-						for c in b:
-							#print(b)
-							z = nltk.ConcordanceIndex(c)
-							if z.offsets(ca):
-								for d in c:
-									if d =='IN':
-										t = str(d)
-										proposeCA(n,t,ca)
-										processed=1
-								#print("\n !! RA confirmed on edge:", eid,efid,etid,ntype)
+					for z in PP:
+						if w == z:
+							detection='Positive polarity, PP marker '
+							raEval(nid,str(o['text']),w,detection,polarity)
+							proposeRA(n)
+					for z in C:
+						if w == z:
+							detection='Positive polarity, causal marker'
+							raEval(nid,str(o['text']),w,detection,polarity)
+							proposeRA(n)
+					for z in V:
+						if w == z:
+							detection='Positive polarity, veridical marker'
+							raEval(nid,str(o['text']),w,detection,polarity)
+							proposeRA(n)
+					for z in NV:
+						if w == z:
+							detection='Positive polarity, non-veridical marker'
+							raEval(nid,str(o['text']),w,detection,polarity)
+							proposeRA(n)
+					for z in T:
+						if w == z:
+							detection='Positive polarity, temporal marker'
+							raEval(nid,str(o['text']),w,detection,polarity)
+							proposeRA(n)
+		for w in CA:
+			ca = w.lower()
+			if text.offsets(ca):
+				if polarity =='negative':
+					for z in NP:
+						if w == z:
+							detection='Negative polarity, NP marker '
+							caEval(nid,str(o['text']),w,detection,polarity)
+							proposeCA(n)
+					for z in C:
+						if w == z:
+							detection='Negative polarity, casual marker'
+							caEval(nid,str(o['text']),w,detection,polarity)
+							proposeCA(n)
+					for z in V:
+						if w == z:
+							detection='Negative polarity, veridical marker'
+							caEval(nid,str(o['text']),w,detection,polarity)
+							proposeCA(n)
+					for z in NV:
+						if w == z:
+							detection='Positive polarity, non-veridical marker'
+							caEval(nid,str(o['text']),w,detection,polarity)
+							proposeA(n)
+					for z in T:
+						if w == z:
+							detection='Positive polarity, temporal marker'
+							caEval(nid,str(o['text']),w,detection,polarity)
+							proposeCA(n)
 	ns=int(nid)
-				#print('\nMatch on nodeID:',n,"type:",ntype,"with word:",ca)
-	for i in proposedRA:
+	if proposedRA:
 		nodeType='RA'
 		es=eid
 		topNode=nodeCount(nid,ns)
 		topEdge=edgeCount(es,eid)
 		targetNode = createNode(rObject,topNode,nodeType)
-		print('target',targetNode)
-		connections=0
-		if connections < 4:
-			topEdge=createEdge(rObject,topEdge,targetNode,i)
-			connections=+1
-	for i in proposedCA:
-		nodeType='RA'
-		es=eid
-		topNode=nodeCount(nid,ns)
-		topEdge=edgeCount(es,eid)
-		targetNode = createNode(rObject,topNode,nodeType)
-		print('target',targetNode)
-		connections=0
-		if connections < 4:
-			topEdge=createEdge(rObject,topEdge,targetNode,i)
-			connections=+1
-	#print("\nPost-search:")
+		for i in proposedRA:
+			connections=0
+			if connections < 4:
+				topEdge=createEdge(rObject,topEdge,targetNode,i)
+				connections=+1
+	if proposedCA:
+		for i in proposedCA:
+			nodeType='RA'
+			es=eid
+			topNode=nodeCount(nid,ns)
+			topEdge=edgeCount(es,eid)
+			targetNode = createNode(rObject,topNode,nodeType)
+			connections=0
+			if connections < 4:
+				topEdge=createEdge(rObject,topEdge,targetNode,i)
+				connections=+1
 	countAll(resp)
-	#print("\nDetected",len(proposedRA),"potential RA(s)")
-	#print("Detected",len(proposedCA),"potential CA(s)\n")
 	return rObject
 
-createDataSet()
-key=7
-rObject = chooseNodeSet(key)
-counterSearch(rObject)
+#
+#All Araucaria Nodesets
+#
+createDataSet() 
+for d in dataset:
+	nObject=counterSearch(d)
+#print(len(proposedCA),'CAs proposed')
+#print(len(proposedRA),'RAs proposed')
+print(len(RANode),'RA nodes found')
+print(len(CANode),'CA nodes found')
+#
+#Create Evaluation Dataset
+#
+#with open('radata.json', 'w') as o:
+#    json.dump(raEvalData, o)
+#with open('cadata.json', 'w') as o:
+#    json.dump(caEvalData, o)
+
+#
+#Create Established Dataset
+#
+with open('estradata.json', 'w') as o:
+    json.dump(RANode, o)
+with open('estcadata.json', 'w') as o:
+    json.dump(CANode, o)
 
 
+#
+#Single Nodeset
+#
+#key=7
+#chooseNodeSet(key)
+#counterSearch(rObject)
 
-#print("\nMost frequent RA markers")
-#for w, f in raCount.most_common(50):
-#    print(u'{}:{}'.format(w, f))
-#print("\nMost frequent CA markers")
-#for w, f in caCount.most_common(50):
-#    print(u'{}:{}'.format(w, f))
-#print(rObject["edges"])
-#print(rObject)
-
-
-
-	#for i in breakdown:
-	#	print(i)
-#for x in CA:
-#	t = nltk.sent_tokenize(x)
-#	tagged = nltk.pos_tag(t)
-#	dumb = [(word,map_tag('en-ptb','universal',tag))for word, tag in tagged]
-	
-
-#for d in dataset:
-#	nObject = counterSearch(d)
-#	for o in nObject['nodes']:
-#		print(o['text'])
-		
-	
-#POS TAGGING
-#for x in RA:
-#	t = nltk.sent_tokenize(x)
-#	tagged = nltk.pos_tag(t)
-#	print('RA:',tagged)
-#for x in CA:
-#	t = nltk.sent_tokenize(x)
-#	tagged = nltk.pos_tag(t)
-#	print('CA:',tagged)
-#	dumb = [(word,map_tag('en-ptb','universal',tag))for word, tag in tagged]
-#	breakdown = swn.senti_synsets(x,'r')
-	#print(dumb)
-print("Actual RA:", len(establishedRA))
-print("Actual CA:", len(establishedCA))
-print("Detected RA:", len(proposedRA))
-print("Detected CA:", len(proposedCA))
-print("CA:", len(CANode))
-print("RA:", len(RANode))
-
-#	printDataSets()
-#resultsFilter(proposedRA,proposedCA)
-#sentAnalysis()
-#print("\nResult set RA length: " + str(len(resultSetRAMarker)))
-#print("Result set CA length: " + str(len(resultSetCAMarker)))
-#raCount = nltk.FreqDist(resultSetRAMarker)
-#caCount = nltk.FreqDist(resultSetCAMarker)
-
+#
+#Start API service
+#
+#@app.route("/")
+#def hello():
+#	key=input("Enter the key you want to use: ")
+#	rObject = chooseNodeSet(key)
+#	nObject = counterSearch(rObject)
+#	return jsonify(nObject)
+#if __name__ == '__main__':
+#	app.run(debug=True)
