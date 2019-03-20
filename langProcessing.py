@@ -43,6 +43,7 @@ T=["After","as soon as","before","ever since","now",  "now that","once","until",
 #causal
 C=["Although","because","even though","for", "given that","if","if ever"," incase","on the condition that","on the assumption that","on the grounds that","provided that","providing that","so","so that","supposing that","though","unless"]
 
+found=[]
 CANode=[]
 RANode=[]
 fromID=[]
@@ -86,12 +87,12 @@ def printDataSets():
 	#	print("detected CA on node:",i)
 	#for i in resultSetRAMarker:
 	#	print("RA marker:",i)
-	for i in resultSetCAMarker:
-		print("CA marker:",i)
+	#for i in resultSetCAMarker:
+	#	print("CA marker:",i)
+	print('inactive print method')
 
 def resultsFilter(proposedRA,proposedCA):
 	for i in proposedRA:
-		j=str(i)
 		result = [x.strip() for x in j.split('|')]	
 		marker=str(result[2])
 	#	print(result[2])
@@ -224,7 +225,7 @@ def detectNodeType(nid,ntype):
 	nodetype=str(ntype)
 	if ntype =="RA":
 		RANode.append(node)
-		print(node)
+		#print(node)
 	if ntype=="CA":
 		CANode.append(node)
 
@@ -303,14 +304,15 @@ def counterSearch(resp):
 		for r in RANode:
 			#print(eid,'vs',r)
 			if r == etid:
-				#print("boop1")
+				print('Scheme Node',r,'edge going to',etid,'edge coming from',efid)
 				rtc.append(etid)
 			if efid == r:
 				#print("boop2")
 				rtc.append(efid)
-	for r in rtc:
-			if nid==r:
-				print(str(n['text']))
+	for z in rtc:
+		print(z)
+		if nid==z:
+			print(str(n['text']))
 	
 	
 	for o in rObject['nodes']:
@@ -411,37 +413,21 @@ def counterSearch(resp):
 
 #
 #All Araucaria Nodesets
-#
-createDataSet() 
-for d in dataset:
-	nObject=counterSearch(d)
+
+#createDataSet() 
+#for d in dataset:
+#	nObject=counterSearch(d)
 #print(len(proposedCA),'CAs proposed')
 #print(len(proposedRA),'RAs proposed')
-print(len(RANode),'RA nodes found')
-print(len(CANode),'CA nodes found')
-#
-#Create Evaluation Dataset
-#
-#with open('radata.json', 'w') as o:
-#    json.dump(raEvalData, o)
-#with open('cadata.json', 'w') as o:
-#    json.dump(caEvalData, o)
-
-#
-#Create Established Dataset
-#
-with open('estradata.json', 'w') as o:
-    json.dump(RANode, o)
-with open('estcadata.json', 'w') as o:
-    json.dump(CANode, o)
-
+#print(len(RANode),'RA nodes found')
+#print(len(CANode),'CA nodes found')
 
 #
 #Single Nodeset
 #
-#key=7
-#chooseNodeSet(key)
-#counterSearch(rObject)
+key=7
+rObject=chooseNodeSet(key)
+counterSearch(rObject)
 
 #
 #Start API service
@@ -454,3 +440,41 @@ with open('estcadata.json', 'w') as o:
 #	return jsonify(nObject)
 #if __name__ == '__main__':
 #	app.run(debug=True)
+
+#
+#Create Evaluation Dataset
+#
+#with open('datasets/radata.json', 'w') as o:
+ #   json.dump(raEvalData, o)
+#with open('datasets/cadata.json', 'w') as o:
+ #   json.dump(caEvalData, o)
+
+#
+#Create Established Dataset
+#
+#with open('datasets/estradata.json', 'w') as o:
+#    json.dump(RANode, o)
+#with open('datasets/estcadata.json', 'w') as o:
+ #   json.dump(CANode, o)
+
+#
+#DataSet Evaluation
+#
+
+#with open('datasets/radata.json', 'r') as o:
+#	anset=json.load(o)
+#with open('datasets/estradata.json','r') as r:
+#	RANode=json.load(r)
+
+#for x in anset:
+#	snid=str(x[1])
+#	for y in RANode:
+		#print(type(snid),snid,type(y),y)
+		#print('y',y,'snid',snid)
+#		if y==snid:
+#			found.append(snid)
+		#print(len(found))
+
+#with open('datasets/evalradata.json','w') as d:
+#	json.dump(found,d)
+	#print(found)
