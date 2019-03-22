@@ -43,9 +43,25 @@ T=["After","as soon as","before","ever since","now",  "now that","once","until",
 #causal
 C=["Although","because","even though","for", "given that","if","if ever"," incase","on the condition that","on the assumption that","on the grounds that","provided that","providing that","so","so that","supposing that","though","unless"]
 
+
+#
+# NODEIDS WHERE NODE IS CONNECTED TO RA/CA
+#
+# Duplicate in below arrays = several detections within node
+#
+#Text node connected to RA node
+#
+rtc=[]
+#Text node connected to CA node
+ctc=[]
+
 found=[]
+
+#ACTUAL RA OR CA NODES
 CANode=[]
 RANode=[]
+
+
 fromID=[]
 proposedRA=[]
 proposedCA=[]
@@ -281,10 +297,7 @@ def caEval(nid,text,marker,desc,polarity):
 def counterSearch(resp):
 	rObject=resp
 
-	#to check
-	rtc=[]
-	ctc=[]
-	
+
 	#print("Pre-search:")
 	countAll(resp)
 	rType=0
@@ -304,15 +317,23 @@ def counterSearch(resp):
 		for r in RANode:
 			#print(eid,'vs',r)
 			if r == etid:
-				print('Scheme Node',r,'edge going to',etid,'edge coming from',efid)
-				rtc.append(etid)
+				#print('Scheme Node',r,'edge going to',etid,'edge coming from',efid)
+				rtc.append(efid)
 			if efid == r:
 				#print("boop2")
-				rtc.append(efid)
-	for z in rtc:
-		print(z)
-		if nid==z:
-			print(str(n['text']))
+				rtc.append(etid)
+		for r in CANode:
+			#print(eid,'vs',r)
+			if r == etid:
+				#print('Scheme Node',r,'edge going to',etid,'edge coming from',efid)
+				ctc.append(efid)
+			if efid == r:
+				#print("boop2")
+				ctc.append(etid)
+	#for z in rtc:
+	#	print('entry to check:',z)
+	#	if nid==z:
+	#		print('Text on matched node:',str(n['text']))
 	
 	
 	for o in rObject['nodes']:
@@ -330,32 +351,32 @@ def counterSearch(resp):
 		for w in RA:
 			ra = w.lower()
 			if text.offsets(ra):
-				if polarity =='positive':
-					for z in PP:
-						if w == z:
-							detection='Positive polarity, PP marker '
-							raEval(nid,str(o['text']),w,detection,polarity)
-							proposeRA(n)
-					for z in C:
-						if w == z:
-							detection='Positive polarity, causal marker'
-							raEval(nid,str(o['text']),w,detection,polarity)
-							proposeRA(n)
-					for z in V:
-						if w == z:
-							detection='Positive polarity, veridical marker'
-							raEval(nid,str(o['text']),w,detection,polarity)
-							proposeRA(n)
-					for z in NV:
-						if w == z:
-							detection='Positive polarity, non-veridical marker'
-							raEval(nid,str(o['text']),w,detection,polarity)
-							proposeRA(n)
-					for z in T:
-						if w == z:
-							detection='Positive polarity, temporal marker'
-							raEval(nid,str(o['text']),w,detection,polarity)
-							proposeRA(n)
+				#if polarity =='positive':
+				for z in PP:
+					if w == z:
+						detection='Positive polarity, PP marker '
+						raEval(nid,str(o['text']),w,detection,polarity)
+						proposeRA(n)
+				for z in C:
+					if w == z:
+						detection='Positive polarity, causal marker'
+						raEval(nid,str(o['text']),w,detection,polarity)
+						proposeRA(n)
+				for z in V:
+					if w == z:
+						detection='Positive polarity, veridical marker'
+						raEval(nid,str(o['text']),w,detection,polarity)
+						proposeRA(n)
+				for z in NV:
+					if w == z:
+						detection='Positive polarity, non-veridical marker'
+						raEval(nid,str(o['text']),w,detection,polarity)
+						proposeRA(n)
+				for z in T:
+					if w == z:
+						detection='Positive polarity, temporal marker'
+						raEval(nid,str(o['text']),w,detection,polarity)
+						proposeRA(n)
 		for w in CA:
 			ca = w.lower()
 			if text.offsets(ca):
@@ -414,9 +435,9 @@ def counterSearch(resp):
 #
 #All Araucaria Nodesets
 
-#createDataSet() 
-#for d in dataset:
-#	nObject=counterSearch(d)
+createDataSet() 
+for d in dataset:
+	nObject=counterSearch(d)
 #print(len(proposedCA),'CAs proposed')
 #print(len(proposedRA),'RAs proposed')
 #print(len(RANode),'RA nodes found')
@@ -425,9 +446,9 @@ def counterSearch(resp):
 #
 #Single Nodeset
 #
-key=7
-rObject=chooseNodeSet(key)
-counterSearch(rObject)
+#key=7
+#rObject=chooseNodeSet(key)
+#counterSearch(rObject)
 
 #
 #Start API service
@@ -444,37 +465,102 @@ counterSearch(rObject)
 #
 #Create Evaluation Dataset
 #
-#with open('datasets/radata.json', 'w') as o:
- #   json.dump(raEvalData, o)
-#with open('datasets/cadata.json', 'w') as o:
- #   json.dump(caEvalData, o)
+#	These data sets are output from the programs marker detection
+#
+with open('datasets/radata.json', 'w') as o:
+    json.dump(raEvalData, o)
+with open('datasets/cadata.json', 'w') as o:
+    json.dump(caEvalData, o)
 
 #
 #Create Established Dataset
 #
-#with open('datasets/estradata.json', 'w') as o:
-#    json.dump(RANode, o)
-#with open('datasets/estcadata.json', 'w') as o:
- #   json.dump(CANode, o)
+#
+#	NodeID where node is connected to/from RA/CA node
+with open('datasets/estradata.json', 'w') as o:
+    json.dump(rtc, o)
+with open('datasets/estcadata.json', 'w') as o:
+   json.dump(ctc, o)
+
+#	NodeID where node is a RA/CA Node
+with open('datasets/estranode.json', 'w') as o:
+    json.dump(RANode, o)
+with open('datasets/estcanode.json', 'w') as o:
+  json.dump(CANode, o)
 
 #
 #DataSet Evaluation
 #
 
-#with open('datasets/radata.json', 'r') as o:
-#	anset=json.load(o)
-#with open('datasets/estradata.json','r') as r:
-#	RANode=json.load(r)
+#	NodeID = RA node
+with open('datasets/estranode.json', 'r') as e:
+    RANodes=json.load(e)
+    estRAtotal=len(RANodes)
 
-#for x in anset:
-#	snid=str(x[1])
-#	for y in RANode:
-		#print(type(snid),snid,type(y),y)
-		#print('y',y,'snid',snid)
-#		if y==snid:
-#			found.append(snid)
-		#print(len(found))
+#	NodeID = Node connected to RA
+with open('datasets/estradata.json','r') as r:
+	estRAdata=json.load(r)
+	estRAdata= list(dict.fromkeys(estRAdata))
+	estRAdataTotal=len(estRAdata)
 
-#with open('datasets/evalradata.json','w') as d:
-#	json.dump(found,d)
-	#print(found)
+#	NodeID = algorithm detection in node
+with open('datasets/radata.json', 'r') as o:
+	anset=json.load(o)
+	
+	
+detection=[]
+#	Checks nodeID in detection dataset against the list of nodeIDs identified to belong
+#	to rule application nodes
+#
+for x in anset:
+	snid=str(x[1])
+	detection.append(snid)
+	for y in estRAdata:
+		if y==snid:
+			found.append(snid)
+#
+#	Removes duplicates and creates JSON of nodeIDs where the program has detected an RA 
+#	within a text node which is already connected to an RA node in AIFDB
+#
+with open('datasets/evalradata.json','w') as d:
+	undet=len(anset)
+	det=list(dict.fromkeys(detection))
+	det=len(det)
+	found = list(dict.fromkeys(found))
+	detRAtotal=len(found)
+	json.dump(found,d)
+print('Number of text nodes connected to RA nodes in nodeset',estRAdataTotal)
+print('Actual total RA nodes within nodeset:',estRAtotal)
+print('Program detections:',undet)
+print('Unique program detections:',det)
+print('Nodes with program detections & connected to RA in corpora:',detRAtotal)
+
+
+#
+#
+#CA SHIT
+#
+#
+with open('datasets/estcanode.json', 'r') as e:
+    CANodes=json.load(e)
+    estCAtotal=len(CANodes)
+with open('datasets/estcadata.json','r') as r:
+	estCAdata=json.load(r)
+	estCAdata= list(dict.fromkeys(estCAdata))
+	estCAdataTotal=len(estCAdata)
+with open('datasets/cadata.json', 'r') as o:
+	anset=json.load(o)
+for x in anset:
+	snid=str(x[1])
+	for y in estCAdata:
+		if y==snid:
+			found.append(snid)
+with open('datasets/evalcadata.json','w') as d:
+	undet=len(anset)
+	found = list(dict.fromkeys(found))
+	detCAtotal=len(found)
+	json.dump(found,d)
+#print('Number of text nodes connected to CA nodes in nodeset',estCAdataTotal)
+#print('Actual total CA nodes within nodeset:',estCAtotal)
+#print('Unique nodes with program detections:',undet)
+#print('Nodes with program detections & connected to CA in corpora:',detCAtotal)
